@@ -18,6 +18,7 @@ import warnings
 from collections.abc import Sequence
 
 import cupy as cp
+import numpy as np
 import os
 from argparse import ArgumentParser
 
@@ -25,6 +26,7 @@ import cvcuda
 import nvcv
 from holoscan.core import Application, Operator, OperatorSpec
 from holoscan.operators import HolovizOp, VideoStreamReplayerOp
+from holoscan.schedulers import EventBasedScheduler
 
 
 flip_code_dict = {"horizontal": 1, "vertical": 0, "both": -1, "none": 2}
@@ -675,6 +677,149 @@ class CropFlipNormalizeReformatOp(Operator):
         op_output.emit(output_tensormap, "out_image")
 
 
+class cuOSDOp(Operator):
+    def __init__(
+        self,
+        fragment,
+        *args,
+        elements=None,
+        in_layout="HWC",
+        **kwargs,
+    ):
+        self.elements = elements
+        if self.elements is None:
+            # default on-screen display for demo
+            self.elements = cvcuda.Elements(
+                elements=[
+                    [
+                        cvcuda.BndBoxI(
+                            box=(10, 10, 25, 25),
+                            thickness=2,
+                            borderColor=(255, 255, 0),
+                            fillColor=(0, 128, 255, 128),  # blue semi-transparent
+                        ),
+                        cvcuda.BndBoxI(
+                            box=(200, 50, 20, 15),
+                            thickness=1,
+                            borderColor=(255, 255, 0),
+                            fillColor=(0, 0, 0, 0),  # fully transparent fill
+                        ),
+                        cvcuda.Label(
+                            utf8Text="label",
+                            fontSize=16,
+                            tlPos=(650, 50),
+                            fontColor=(255, 255, 0),
+                            bgColor=(0, 128, 255, 128),
+                        ),
+                        cvcuda.Segment(
+                            box=(80, 20, 50, 50),
+                            thickness=1,
+                            segArray=np.array(
+                                [
+                                    [0, 0, 0, 0, 0.2, 0.2, 0, 0, 0, 0],
+                                    [0, 0, 0, 0.2, 0.3, 0.3, 0.2, 0, 0, 0],
+                                    [0, 0, 0.2, 0.3, 0.4, 0.4, 0.3, 0.2, 0, 0],
+                                    [0, 0.2, 0.3, 0.4, 0.5, 0.5, 0.4, 0.3, 0.2, 0],
+                                    [0.2, 0.3, 0.4, 0.5, 0.5, 0.5, 0.5, 0.4, 0.3, 0.2],
+                                    [0.2, 0.3, 0.4, 0.5, 0.5, 0.5, 0.5, 0.4, 0.3, 0.2],
+                                    [0, 0.2, 0.3, 0.4, 0.5, 0.5, 0.4, 0.3, 0.2, 0],
+                                    [0, 0, 0.2, 0.3, 0.4, 0.4, 0.3, 0.2, 0, 0],
+                                    [0, 0, 0, 0.2, 0.3, 0.3, 0.2, 0, 0, 0],
+                                    [0, 0, 0, 0, 0.2, 0.2, 0, 0, 0, 0],
+                                ]
+                            ),
+                            segThreshold=0.2,
+                            borderColor=(255, 255, 255),
+                            segColor=(0, 128, 255, 128),
+                        ),
+                        cvcuda.Point(
+                            centerPos=(100, 100),
+                            radius=4,
+                            color=(255, 255, 0),
+                        ),
+                        cvcuda.Line(
+                            pos0=(80, 85),
+                            pos1=(150, 75),
+                            thickness=3,
+                            color=(255, 0, 0),
+                        ),
+                        cvcuda.PolyLine(
+                            points=np.array(
+                                [
+                                    [120, 120],
+                                    [300, 100],
+                                    [250, 140],
+                                    [350, 180],
+                                    [400, 220],
+                                ]
+                            ),
+                            thickness=0,
+                            isClosed=True,
+                            borderColor=(255, 255, 255),
+                            fillColor=(0, 255, 128, 96),
+                        ),
+                        cvcuda.RotatedBox(
+                            centerPos=(120, 140),
+                            width=12,
+                            height=12,
+                            yaw=0.3,
+                            thickness=1,
+                            borderColor=(255, 255, 0),
+                            bgColor=(0, 128, 255, 128),
+                        ),
+                        cvcuda.Circle(
+                            centerPos=(540, 30),
+                            radius=25,
+                            thickness=2,
+                            borderColor=(255, 255, 0),
+                            bgColor=(0, 128, 255, 128),
+                        ),
+                        cvcuda.Arrow(
+                            pos0=(550, 200),
+                            pos1=(450, 100),
+                            arrowSize=12,
+                            thickness=3,
+                            color=(0, 0, 255, 128),
+                        ),
+                        cvcuda.Clock(
+                            clockFormat=cvcuda.ClockFormat.YYMMDD_HHMMSS,
+                            time=0,
+                            fontSize=10,
+                            tlPos=(750, 210),
+                            fontColor=(255, 255, 0),
+                            bgColor=(0, 128, 255, 128),
+                        ),
+                    ],
+                ],
+            )
+
+        self.in_layout = in_layout
+        self.out = None
+        super().__init__(fragment, *args, **kwargs)
+
+    def setup(self, spec: OperatorSpec):
+        spec.input("in")
+        spec.output("out")
+
+    def compute(self, op_input, op_output, context):
+        tensormap = op_input.receive("in")
+
+        image_in = cp.asarray(tensormap["image"])
+        if image_in.ndim != len(self.in_layout):
+            raise ValueError(
+                f"input tensor is {image_in.ndim}d but layout would correspond "
+                f"to a {len(self.in_layout)}d tensor"
+            )
+        cv_image_in = cvcuda.as_tensor(image_in, layout=self.in_layout)
+
+        if self.out is None:
+            self.out = cvcuda.osd(src=cv_image_in, elements=self.elements)
+            self.out_cupy = cp.asarray(self.out.cuda())
+        else:
+            cvcuda.osd_into(dst=self.out, src=cv_image_in, elements=self.elements)
+        op_output.emit(dict(image=self.out_cupy), "out")
+
+
 # Now define a simple application using the operators defined above
 class MyVideoProcessingApp(Application):
     """Example of an application that uses the operators defined above.
@@ -712,7 +857,7 @@ class MyVideoProcessingApp(Application):
             basename="surgical_video",
             frame_rate=0,
             repeat=True,
-            realtime=True,
+            realtime=False,  # True,
             count=self.count,
         )
 
@@ -727,7 +872,7 @@ class MyVideoProcessingApp(Application):
         image_processing = CropFlipNormalizeReformatOp(
             self,
             flip="none",
-            name="image_processing",
+            name="crop_flip_normalize_reformat",
             rect="rect.rect" if use_external_rect_tensor else rect,
             border="constant",
             bvalue=0,
@@ -774,6 +919,8 @@ class MyVideoProcessingApp(Application):
                 values=(1.5, 1.0, 1.0),
             )
 
+        osd_op = cuOSDOp(self, in_layout="HWC", name="osd_op")
+
         visualizer = HolovizOp(
             self,
             name="holoviz",
@@ -790,7 +937,8 @@ class MyVideoProcessingApp(Application):
         if use_external_scale_tensor:
             self.add_flow(scale_tensor_op, image_processing, {("scale", "scale")})
         # self.add_flow()
-        self.add_flow(image_processing, visualizer, {("out_image", "receivers")})
+        self.add_flow(image_processing, osd_op, {("out_image", "in")})
+        self.add_flow(osd_op, visualizer, {("out", "receivers")})
 
 
 if __name__ == "__main__":
@@ -811,4 +959,14 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     app = MyVideoProcessingApp(data=args.data, count=args.count)
+    if False:
+        app.scheduler(
+            EventBasedScheduler(
+                app,
+                worker_thread_number=4,
+                stop_on_deadlock=True,
+                stop_on_deadlock_timeout=500,
+                name="ebs",
+            )
+        )
     app.run()
