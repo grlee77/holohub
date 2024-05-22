@@ -21,8 +21,10 @@ import cvcuda
 import nvcv
 from holoscan.core import Operator, OperatorSpec
 
+__all__ = ["OnScreenDisplayOp"]
 
-class cuOSDOp(Operator):
+
+class OnScreenDisplayOp(Operator):
     def __init__(
         self,
         fragment,
