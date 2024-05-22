@@ -29,7 +29,7 @@ from holoscan.operators import HolovizOp, VideoStreamReplayerOp
 from holoscan.schedulers import EventBasedScheduler
 
 from cropflipnormalizereformat import CropFlipNormalizeReformatOp
-from cuosd import cuOSDOp
+from cuosd import OnScreenDisplayOp
 from cvtcolor import ColorConversionOp
 
 
@@ -203,7 +203,7 @@ class MyVideoProcessingApp(Application):
             basename="surgical_video",
             frame_rate=0,
             repeat=True,
-            realtime=False,  # True,
+            realtime=True,
             count=self.count,
         )
 
@@ -215,6 +215,7 @@ class MyVideoProcessingApp(Application):
         use_external_scale_tensor = False
         use_external_base_tensor = False
         # rect = None
+
         image_processing = CropFlipNormalizeReformatOp(
             self,
             flip="none",
@@ -265,16 +266,15 @@ class MyVideoProcessingApp(Application):
                 values=(1.5, 1.0, 1.0),
             )
 
-        osd_op = cuOSDOp(self, name="osd", elements=osd_elements, in_layout="HWC")
+        osd_op = OnScreenDisplayOp(self, name="osd", elements=osd_elements, in_layout="HWC")
 
-        convert_to_grayscale = True
+        convert_to_grayscale = False
         if convert_to_grayscale:
             cvt_op = ColorConversionOp(
                 self,
                 name="rgb2gray",
                 in_layout="HWC",
-                in_format=cvcuda.Format.RGB8,
-                code=cvcuda.ColorConversion.RGB2GRAY,  # src/cvcuda/include/cvcuda/Types.h
+                code="RGB2GRAY",  # or code=cvcuda.ColorConversion.RGB2GRAY,
                 out_format=cvcuda.Format.U8,
             )
 
