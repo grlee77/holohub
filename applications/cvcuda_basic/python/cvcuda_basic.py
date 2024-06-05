@@ -14,8 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """  # no qa
-import warnings
-from collections.abc import Sequence
 
 import cupy as cp
 import numpy as np
@@ -23,7 +21,6 @@ import os
 from argparse import ArgumentParser
 
 import cvcuda
-import nvcv
 from holoscan.core import Application, Operator, OperatorSpec
 from holoscan.operators import HolovizOp, VideoStreamReplayerOp
 from holoscan.schedulers import EventBasedScheduler
@@ -203,7 +200,7 @@ class MyVideoProcessingApp(Application):
             basename="surgical_video",
             frame_rate=0,
             repeat=True,
-            realtime=True,
+            realtime=False,
             count=self.count,
         )
 

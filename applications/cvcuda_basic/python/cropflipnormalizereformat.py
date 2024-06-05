@@ -18,7 +18,6 @@ import warnings
 from collections.abc import Sequence
 
 import cupy as cp
-import os
 
 import cvcuda
 import nvcv
@@ -87,7 +86,7 @@ class CropFlipNormalizeReformatOp(Operator):
             - 4D: "NHWC"
 
     out_tensor_format : {"HW", "HWC", "CHW", "NHWC", "NCHW"}, optional
-        The format of the input tensor where H = height, W = width, C = channels, N = batch.
+        The format of the output tensor where H = height, W = width, C = channels, N = batch.
         If ``None``, it will be set equal to ``in_tensor_format``.
     out_tensor_shape : tuple of int, optional
         If a tuple is provided, its length must equal the number of dimensions specified for
@@ -162,6 +161,8 @@ class CropFlipNormalizeReformatOp(Operator):
         ``cvcuda.NormalizeFlags.SCALE_IS_STDDEV``. Unused otherwise.
     stream : cvcuda.Stream or None, optional
         The CUDA stream to use for the operation. If None, the default stream will be used.
+    name : str, optional
+        The name of the operator.
     """  # noqa: E501
 
     def __init__(
@@ -183,6 +184,7 @@ class CropFlipNormalizeReformatOp(Operator):
         flags=0,
         epsilon=None,
         stream=None,
+        name="crop_flip_normalize_reformat",
         **kwargs,
     ):
         # name of the input port
@@ -247,7 +249,7 @@ class CropFlipNormalizeReformatOp(Operator):
         self.cv_out = None
 
         # Need to call the base class constructor last
-        super().__init__(fragment, *args, **kwargs)
+        super().__init__(fragment, *args, name=name, **kwargs)
 
     def _set_flip_code(self, flip):
         """Store flip code as an int32 NC tensor of shape (1, 1) on the device"""
@@ -297,7 +299,7 @@ class CropFlipNormalizeReformatOp(Operator):
                     rect_tensor_port, rect_tensor_name = rect.split(".")
                 else:
                     raise ValueError("tensor name must be in the form 'name' or 'port.name'")
-            elif isinstance(rect, tuple):
+            elif isinstance(rect, Sequence):
                 if len(rect) != 4:
                     raise ValueError(f"Invalid rect tuple: {rect}. It must be a 4-tuple.")
                 if not all(isinstance(i, int) for i in rect):
@@ -478,7 +480,9 @@ class CropFlipNormalizeReformatOp(Operator):
 
     def compute(self, op_input, op_output, context):
         tensormap = op_input.receive(self.in_image_port)
-        input_tensor = tensormap[""]  # stride (2562, 3, 1)
+        if len(tensormap) != 1:
+            raise ValueError("Input tensor map must have exactly one tensor.")        
+        input_tensor = tensormap.popitem()[1]
 
         # TODO: instead of this assumption, provide in_tensor_format argument
         if self.in_tensor_format is None:
@@ -496,12 +500,6 @@ class CropFlipNormalizeReformatOp(Operator):
         num_channels = 1 if self.in_index_c == -1 else input_tensor.shape[self.in_index_c]
         # determine batch size from the input tensor
         num_batch = 1 if self.in_index_n == -1 else input_tensor.shape[self.in_index_n]
-        # print(f"{self.in_index_n = }")
-        # print(f"{self.in_index_h = }")
-        # print(f"{self.in_index_w = }")
-        # print(f"{self.in_index_c = }")
-        # print(f"{num_channels = }")
-        # print(f"{num_batch = }")
 
         cv_in_tensor = nvcv.as_tensor(input_tensor, layout=self.in_tensor_format)
         cv_in = cvcuda.as_image(cv_in_tensor.cuda())
@@ -606,11 +604,6 @@ class CropFlipNormalizeReformatOp(Operator):
             if self.out_tensor_dtype is None:
                 # cast to CuPy array to get the CuPy dtype (input_tensor.dtype is the DLPack DLDataType)
                 self.out_tensor_dtype = cp.asarray(input_tensor).dtype
-            # print(f"{out_shape = }")
-            # print(f"{self.rect_height_width = }")
-            # print(f"{num_batch = }")
-            # print(f"{num_channels = }")
-            # print(f"{self.out_tensor_format = }")
 
             # cv_out will share cupy_out's memory so assign it to the class so it stays alive
             self.cupy_out = cp.empty(out_shape, dtype=self.out_tensor_dtype)

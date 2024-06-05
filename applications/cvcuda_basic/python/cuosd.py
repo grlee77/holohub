@@ -15,10 +15,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """  # no qa
 import cupy as cp
-import numpy as np
 
 import cvcuda
-import nvcv
 from holoscan.core import Operator, OperatorSpec
 
 __all__ = ["OnScreenDisplayOp"]
@@ -31,12 +29,13 @@ class OnScreenDisplayOp(Operator):
         *args,
         elements,
         in_layout="HWC",
+        name="on_screen_display",
         **kwargs,
     ):
         self.elements = elements
         self.in_layout = in_layout
         self.out = None
-        super().__init__(fragment, *args, **kwargs)
+        super().__init__(fragment, *args, name=name, **kwargs)
 
     def setup(self, spec: OperatorSpec):
         spec.input("in")

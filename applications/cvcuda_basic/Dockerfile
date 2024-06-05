@@ -29,7 +29,7 @@ ARG GPU_TYPE
 FROM ${BASE_IMAGE} as cvcuda-downloader
 
 ARG GCC_VERSION=11
-ARG CVCUDA_TAG=v0.7.0-beta
+ARG CVCUDA_TAG=v0.12.0-beta
 ARG DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /opt/nvidia
@@ -56,14 +56,14 @@ RUN git clone --branch ${CVCUDA_TAG} --depth 1 https://github.com/CVCUDA/CV-CUDA
 FROM cvcuda-downloader as cvcuda-builder
 WORKDIR /opt/nvidia/CV-CUDA
 
-# compile CV-CUDA
-RUN bash ./ci/build.sh
+# compile CV-CUDA without the tests
+RUN sed -i 's/DBUILD_TESTS=1/DBUILD_TESTS=0/' ci/build.sh \
+    && bash ./ci/build.sh
 
 # create and install the Debian packages
 # (skip cvcuda-tests as it requires an additional python3-pytest dependency)
 RUN cd build-rel \
     && cpack -G DEB . \
-    && rm cvcuda-tests*.deb \
     && dpkg -i cvcuda*.deb \
     && find . -name "*.whl" -exec pip install {} \;
 
