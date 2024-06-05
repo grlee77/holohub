@@ -307,6 +307,7 @@ class ColorConversionOp(Operator):
         in_layout="HWC",
         code="RGB2GRAY",  # src/cvcuda/include/cvcuda/Types.h
         stream=None,
+        name="color_convert",
         **kwargs,
     ):
         if in_layout not in ("HWC", "NHWC"):
@@ -336,7 +337,7 @@ class ColorConversionOp(Operator):
         self.code, self.supported_dtypes = implemented_conversions[self.code_name]
         self.stream = stream
         self.out = None
-        super().__init__(fragment, *args, **kwargs)
+        super().__init__(fragment, *args, name=name, **kwargs)
 
     def setup(self, spec: OperatorSpec):
         spec.input("in")
@@ -344,14 +345,15 @@ class ColorConversionOp(Operator):
 
     def compute(self, op_input, op_output, context):
         tensormap = op_input.receive("in")
-
-        image_in = cp.asarray(tensormap["image"])
+        if len(tensormap) != 1:
+            raise ValueError("Input tensor map must have exactly one tensor.")
+        image_in = cp.asarray(tensormap.popitem()[1])
 
         # on the first frame only, validate the dtype of the input frame
         if self.out is None:
             if image_in.dtype not in self.supported_dtypes:
                 raise RuntimeError(
-                    f"image_in.dtype ({image_in.dtype.name}) for code '{code_name}' should have "
+                    f"image_in.dtype ({image_in.dtype.name}) for code '{self.code_name}' should have "
                     "one of the following dtypes: ("
                     f"{', '.join(cp.dtype(d).name for d in self.supported_dtypes)}).")
 
@@ -367,5 +369,4 @@ class ColorConversionOp(Operator):
             self.out_cupy = cp.asarray(self.out.cuda())
         else:
             cvcuda.cvtcolor_into(dst=self.out, src=cv_image_in, code=self.code, stream=self.stream)
-        # print(f"{self.out_cupy.shape=}")
         op_output.emit(dict(image=self.out_cupy), "out")
