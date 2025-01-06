@@ -36,6 +36,20 @@ target_link_libraries(cvcuda_basic
   cvcuda
 )
 
+add_executable(cvcuda_hqresize
+  hq_resize_app.cpp
+)
+
+target_link_libraries(cvcuda_hqresize
+  PRIVATE
+  holoscan::core
+  holoscan::ops::video_stream_replayer
+  holoscan::ops::holoviz
+  holoscan::ops::cvcuda_holoscan_interop
+  nvcv_types
+  cvcuda
+)
+
 # Copy the config to the binary directory
 add_custom_target(cvcuda_basic_deps
   COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/cvcuda_basic.yaml" ${CMAKE_CURRENT_BINARY_DIR}
@@ -43,6 +57,7 @@ add_custom_target(cvcuda_basic_deps
   BYPRODUCTS "cvcuda_basic.yaml"
 )
 add_dependencies(cvcuda_basic cvcuda_basic_deps)
+add_dependencies(cvcuda_hqresize cvcuda_basic_deps)
 
 # Add testing
 if(BUILD_TESTING)

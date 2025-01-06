@@ -159,8 +159,6 @@ class CropFlipNormalizeReformatOp(Operator):
     epsilon : float or None,
         An epsilon value used to avoid potential divide by zero during scaling when ``flags`` is set to
         ``cvcuda.NormalizeFlags.SCALE_IS_STDDEV``. Unused otherwise.
-    stream : cvcuda.Stream or None, optional
-        The CUDA stream to use for the operation. If None, the default stream will be used.
     name : str, optional
         The name of the operator.
     """  # noqa: E501
@@ -183,7 +181,6 @@ class CropFlipNormalizeReformatOp(Operator):
         global_shift=0.0,
         flags=0,
         epsilon=None,
-        stream=None,
         name="crop_flip_normalize_reformat",
         **kwargs,
     ):
@@ -236,9 +233,6 @@ class CropFlipNormalizeReformatOp(Operator):
 
         # validate and set self.flags and self.epsilon
         self._prep_flags_and_epsilon(flags, epsilon)
-
-        # CUDA stream
-        self.stream = stream
 
         # output CuPy array (to be set in compute method)
         # This inernal array will always have self.out_tensor_layout format of NHWC or NCHW, but
@@ -624,7 +618,7 @@ class CropFlipNormalizeReformatOp(Operator):
             epsilon=self.epsilon,
             border=self.border,
             bvalue=self.bvalue,
-            stream=self.stream,
+            stream=None,  # TODO: use internal stream
         )
 
         # drop N and/or C dimensions to match the specified output format

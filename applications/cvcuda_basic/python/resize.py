@@ -57,8 +57,6 @@ class ResizeOp(Operator):
     out_tensor_format : {"HW", "HWC", "NHWC"}, optional
         The format of the output tensor. Must match the input tensor aside from possibly adding
         or dropping singleton channel and batch dimensions.
-    stream : cvcuda.Stream or None, optional
-        The CUDA stream to use for the operation. If None, the default stream will be used.
     name : str, optional
         The name of the operator.
 
@@ -76,7 +74,6 @@ class ResizeOp(Operator):
         shape,
         interp,
         out_tensor_format=None,
-        stream=None,
         name="resize",
         **kwargs,
     ):
@@ -88,9 +85,6 @@ class ResizeOp(Operator):
                 raise ValueError(f"unsupported out_tensor_format: {out_tensor_format}. "
                                  "Must be one of {'HW', 'HWC', 'NHWC'}")
         self.out_tensor_format = out_tensor_format
-
-        # CUDA stream
-        self.stream = stream
 
         # output CuPy array (to be set in compute method)
         self.cupy_out = None
@@ -181,7 +175,7 @@ class ResizeOp(Operator):
             dst=self.cv_out,
             src=cv_in_tensor,
             interp=self.interp,
-            stream=self.stream,
+            stream=None,  # TODO: use internal stream
         )
 
         # drop N and/or C dimensions to match the specified output format

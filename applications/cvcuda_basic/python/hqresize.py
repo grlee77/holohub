@@ -74,8 +74,6 @@ class HQResizeOp(Operator):
         Interpolation type used for downscaling.
     max_interpolation : {"nearest", "linear", "cubic", "lanczos", "gaussian"}, optional
         Interpolation type used for upscaling.
-    stream : cvcuda.Stream or None, optional
-        The CUDA stream to use for the operation. If None, the default stream will be used.
     name : str, optional
         The name of the operator.
 
@@ -98,7 +96,6 @@ class HQResizeOp(Operator):
         mag_interpolation=None,
         roi=None,
         out_tensor_format=None,
-        stream=None,
         name="hqresize",
         **kwargs,
     ):
@@ -117,9 +114,6 @@ class HQResizeOp(Operator):
                 raise ValueError(f"unsupported out_tensor_format: {out_tensor_format}. "
                                  "Must be one of {'HW', 'HWC', 'NHWC', 'DHW', 'DHWC', 'NDHWC'}")
         self.out_tensor_format = out_tensor_format
-
-        # CUDA stream
-        self.stream = stream
 
         # output CuPy array (to be set in compute method)
         self.cupy_out = None
@@ -184,6 +178,12 @@ class HQResizeOp(Operator):
         spec.input("in")
         spec.output("out")
 
+    def start(self):
+        if self.out_tensor_format is None:
+            self.out_tensor_format = self.in_tensor_format
+
+        self._set_in_axis_indices(self.in_tensor_format)
+
     def compute(self, op_input, op_output, context):
         tensormap = op_input.receive("in")
         if len(tensormap) != 1:
@@ -196,10 +196,6 @@ class HQResizeOp(Operator):
                 f"Tensor has {input_tensor.ndim} dimensions, but expected a tensor with "
                 f"{ndim_expected} dimensions corresponding to {self.in_tensor_format} format.",
             )
-        if self.out_tensor_format is None:
-            self.out_tensor_format = self.in_tensor_format
-
-        self._set_in_axis_indices(self.in_tensor_format)
 
         # determine number of channels from input tensor
         num_channels = 1 if self.in_index_c == -1 else input_tensor.shape[self.in_index_c]
@@ -241,7 +237,7 @@ class HQResizeOp(Operator):
             interpolation=None,
             min_interpolation=self.min_interpolation,
             mag_interpolation=self.mag_interpolation,
-            stream=self.stream,
+            stream=None,  # TODO: use internal stream
         )
 
         # drop N and/or C dimensions to match the specified output format

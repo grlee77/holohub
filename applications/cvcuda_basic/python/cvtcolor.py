@@ -306,7 +306,6 @@ class ColorConversionOp(Operator):
         *args,
         in_layout="HWC",
         code="RGB2GRAY",  # src/cvcuda/include/cvcuda/Types.h
-        stream=None,
         name="color_convert",
         **kwargs,
     ):
@@ -335,7 +334,6 @@ class ColorConversionOp(Operator):
             )
         self.in_layout = in_layout
         self.code, self.supported_dtypes = implemented_conversions[self.code_name]
-        self.stream = stream
         self.out = None
         super().__init__(fragment, *args, name=name, **kwargs)
 
@@ -365,7 +363,8 @@ class ColorConversionOp(Operator):
         cv_image_in = cvcuda.as_tensor(image_in, layout=self.in_layout)
 
         if self.out is None:
-            self.out = cvcuda.cvtcolor(src=cv_image_in, code=self.code, stream=self.stream)
+            # TODO: use internal stream
+            self.out = cvcuda.cvtcolor(src=cv_image_in, code=self.code, stream=None)
             self.out_cupy = cp.asarray(self.out.cuda())
         else:
             cvcuda.cvtcolor_into(dst=self.out, src=cv_image_in, code=self.code, stream=self.stream)
