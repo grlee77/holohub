@@ -32,12 +32,7 @@ target_link_libraries(endoscopy_tool_tracking
   holoscan::ops::holoviz
   lstm_tensor_rt_inference
   tool_tracking_postprocessor
-  holoscan::aja
 )
-
-target_link_libraries(endoscopy_tool_tracking PRIVATE $<TARGET_NAME_IF_EXISTS:holoscan::videomaster>)
-target_link_libraries(endoscopy_tool_tracking PRIVATE $<TARGET_NAME_IF_EXISTS:holoscan::qcap_source>)
-target_link_libraries(endoscopy_tool_tracking PRIVATE $<TARGET_NAME_IF_EXISTS:holoscan::vtk_renderer>)
 
 # Download the associated dataset if needed
 option(HOLOHUB_DOWNLOAD_DATASETS "Download datasets" ON)
