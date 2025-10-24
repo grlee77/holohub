@@ -142,15 +142,7 @@ class NVIDIAVideoCodecApp : public holoscan::Application {
         from_config("decoder"));
 
     // Create Holoviz Visualizer
-    auto visualizer = make_operator<ops::HolovizOp>(
-        "visualizer",
-        Arg("allocator") = make_resource<CudaStreamPool>("cuda_stream",
-                                                         0,   // dev_id
-                                                         0,   // stream_flags
-                                                         0,   // stream_priority
-                                                         1,   // reserved_size
-                                                         5),  // max_size
-        from_config("holoviz"));
+    auto visualizer = make_operator<ops::HolovizOp>("visualizer", from_config("holoviz"));
 
     // Create Statistics Operator
     auto stats = make_operator<StatsOp>("stats");

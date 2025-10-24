@@ -20,7 +20,7 @@ from argparse import ArgumentParser
 from holoscan.conditions import PeriodicCondition
 from holoscan.core import Application, Operator, Tracker
 from holoscan.operators import FormatConverterOp, HolovizOp, VideoStreamReplayerOp
-from holoscan.resources import BlockMemoryPool, CudaStreamPool, MemoryStorageType, RMMAllocator
+from holoscan.resources import BlockMemoryPool, MemoryStorageType, RMMAllocator
 
 from holohub.nv_video_decoder import NvVideoDecoderOp
 from holohub.nv_video_encoder import NvVideoEncoderOp
@@ -148,15 +148,6 @@ class NVIDIAVideoCodecApp(Application):
         visualizer = HolovizOp(
             self,
             name="visualizer",
-            cuda_stream_pool=CudaStreamPool(
-                self,
-                name="cuda_stream",
-                dev_id=0,
-                stream_flags=0,
-                stream_priority=0,
-                reserved_size=1,
-                max_size=5,
-            ),
             **self.kwargs("holoviz"),
         )
 
