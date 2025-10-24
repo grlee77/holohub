@@ -48,8 +48,6 @@ void NvVideoDecoderOp::setup(OperatorSpec& spec) {
              ParameterFlag::kOptional);
   spec.param(allocator_, "allocator", "Allocator", "Allocator for output buffers.");
   spec.param(verbose_, "verbose", "Verbose", "Print detailed decoder information", false);
-
-  cuda_stream_handler_.define_params(spec);
 }
 
 void NvVideoDecoderOp::initialize() {

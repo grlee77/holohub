@@ -24,7 +24,6 @@
 #include <cuda.h>
 #include "holoscan/core/gxf/entity.hpp"
 #include "holoscan/core/operator.hpp"
-#include "holoscan/utils/cuda_stream_handler.hpp"
 
 #include "NvEncoder/NvEncoderCuda.h"
 #include "nvEncodeAPI.h"

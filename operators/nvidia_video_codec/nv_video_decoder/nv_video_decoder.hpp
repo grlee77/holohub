@@ -26,7 +26,6 @@
 #include <cuda.h>
 #include "holoscan/core/gxf/entity.hpp"
 #include "holoscan/core/operator.hpp"
-#include "holoscan/utils/cuda_stream_handler.hpp"
 
 #include "FFmpegDemuxer.h"
 #include "NvDecoder/NvDecoder.h"
@@ -130,8 +129,6 @@ class NvVideoDecoderOp : public Operator {
   Parameter<int> height_;
   Parameter<std::shared_ptr<holoscan::Allocator>> allocator_;
   Parameter<bool> verbose_;
-
-  CudaStreamHandler cuda_stream_handler_;
 
   // CUDA
   CUcontext cu_context_ = nullptr;
