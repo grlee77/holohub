@@ -25,7 +25,7 @@ import numpy as np
 import nvcv
 from holoscan.core import Application, ConditionType
 from holoscan.operators import BayerDemosaicOp, FormatConverterOp, HolovizOp
-from holoscan.resources import BlockMemoryPool, CudaStreamPool, MemoryStorageType
+from holoscan.resources import BlockMemoryPool, MemoryStorageType
 from holoscan.schedulers import MultiThreadScheduler
 from skimage.io import imread
 
@@ -275,14 +275,6 @@ class LaserDetectionApp(Application):
             )
         # EVT source
         e_source = EmergentSourceOp(self, name="emergent", **self.kwargs("emergent"))
-        cuda_stream_pool = CudaStreamPool(
-            self,
-            dev_id=0,
-            stream_flags=0,
-            stream_priority=0,
-            reserved_size=1,
-            max_size=5,
-        )
         pool = BlockMemoryPool(
             self,
             name="pool",
@@ -294,7 +286,6 @@ class LaserDetectionApp(Application):
             self,
             name="bayer_demosaic",
             pool=pool,
-            cuda_stream_pool=cuda_stream_pool,
             **self.kwargs("demosaic"),
         )
         cal_evt_coords = CalCoordsOperator(

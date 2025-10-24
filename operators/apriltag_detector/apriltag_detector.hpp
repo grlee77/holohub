@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +20,6 @@
 
 #include <holoscan/core/operator.hpp>
 #include <holoscan/core/parameter.hpp>
-#include <holoscan/utils/cuda_stream_handler.hpp>
 
 #include "cuAprilTags.h"
 #include "cuda.h"
@@ -57,7 +56,6 @@ class ApriltagDetectorOp : public holoscan::Operator {
 
   CUcontext cuda_context_ = nullptr;
   CUdevice cuda_device_ = 0;
-  holoscan::CudaStreamHandler cuda_stream_handler_;
 };
 
 }  // namespace holoscan::ops

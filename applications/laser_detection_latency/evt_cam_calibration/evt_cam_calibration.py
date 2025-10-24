@@ -23,7 +23,7 @@ import numpy as np
 from holoscan.conditions import CountCondition
 from holoscan.core import Application
 from holoscan.operators import BayerDemosaicOp, HolovizOp
-from holoscan.resources import BlockMemoryPool, CudaStreamPool, MemoryStorageType
+from holoscan.resources import BlockMemoryPool, MemoryStorageType
 from skimage.io import imread
 
 from holohub.apriltag_detector import ApriltagDetectorOp
@@ -117,14 +117,6 @@ class EvtCamCalibrationApp(Application):
 
         source = EmergentSourceOp(self, name="emergent", **self.kwargs("emergent"))
         source.add_arg(CountCondition(self, count=350))
-        cuda_stream_pool = CudaStreamPool(
-            self,
-            dev_id=0,
-            stream_flags=0,
-            stream_priority=0,
-            reserved_size=1,
-            max_size=5,
-        )
         pool = BlockMemoryPool(
             self,
             name="pool",
@@ -136,7 +128,6 @@ class EvtCamCalibrationApp(Application):
             self,
             name="bayer_demosaic",
             pool=pool,
-            cuda_stream_pool=cuda_stream_pool,
             **self.kwargs("demosaic"),
         )
 

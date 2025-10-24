@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,8 +47,6 @@ void ApriltagDetectorOp::setup(holoscan::OperatorSpec& spec) {
   spec.param(width_, "width", "Width", "Width of the input image");
   spec.param(height_, "height", "Height", "Height of the input image");
   spec.param(number_of_tags_, "number_of_tags", "Number of tags", "Number of tags to detect");
-
-  cuda_stream_handler_.define_params(spec);
 }
 
 void ApriltagDetectorOp::start() {
@@ -87,11 +85,8 @@ void ApriltagDetectorOp::compute(holoscan::InputContext& input, holoscan::Output
 
   auto& entity = maybe_entity.value();
 
-  // get the CUDA stream from the input message
-  gxf_result_t stream_handler_result = cuda_stream_handler_.from_message(context.context(), entity);
-  if (stream_handler_result != GXF_SUCCESS) {
-    throw std::runtime_error("Failed to get the CUDA stream from incoming messages");
-  }
+  // get the operator's internal stream (after synchronizing against any stream found on input)
+  cudaStream_t cuda_stream = op_input.receive_cuda_stream("input");
 
   const auto input_tensor = entity.get<holoscan::Tensor>();
   if (!input_tensor) { throw std::runtime_error("Tensor not found in message"); }
@@ -128,7 +123,6 @@ void ApriltagDetectorOp::compute(holoscan::InputContext& input, holoscan::Output
   cuAprilTagsImageInput_t input_image = {
       reinterpret_cast<uchar3*>(input_tensor->data()), width * sizeof(uchar3), width, height};
 
-  cudaStream_t cuda_stream = cuda_stream_handler_.get_cuda_stream(context.context());
   cuAprilTagsDetect(
       apriltag_handle_, &input_image, tags.data(), &num_tags, number_of_tags_, cuda_stream);
 
