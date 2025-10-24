@@ -87,8 +87,6 @@ class QtVideoApp : public QtHoloscanApp {
   void compose() override {
     // Create resources
     const auto allocator = make_resource<holoscan::UnboundedAllocator>("allocator");
-    const auto cuda_stream_pool =
-        make_resource<holoscan::CudaStreamPool>("cuda_stream", 0, 0, 0, 1, 5);
 
     // Create the operators
     const auto replayer = make_operator<holoscan::ops::VideoStreamReplayerOp>(
@@ -102,13 +100,11 @@ class QtVideoApp : public QtHoloscanApp {
     const auto converter = make_operator<holoscan::ops::FormatConverterOp>(
         "converter",
         holoscan::Arg("out_dtype", std::string("rgba8888")),
-        holoscan::Arg("pool", allocator),
-        holoscan::Arg("cuda_stream_pool", cuda_stream_pool));
+        holoscan::Arg("pool", allocator));
     const auto filter = make_operator<holoscan::ops::NppFilterOp>(
         "filter",
         holoscan::Arg("filter", std::string("SobelHoriz")),
-        holoscan::Arg("allocator", allocator),
-        holoscan::Arg("cuda_stream_pool", cuda_stream_pool));
+        holoscan::Arg("allocator", allocator));
 
     // Find the Qt Holoscan video object in the QML view, the QtVideoOp need this
     // to pass the video buffer to render to the video object

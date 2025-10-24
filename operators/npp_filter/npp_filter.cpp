@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -74,8 +74,6 @@ void NppFilterOp::setup(OperatorSpec& spec) {
 
   spec.input<holoscan::gxf::Entity>("input");
   spec.output<holoscan::gxf::Entity>("output");
-
-  cuda_stream_handler_.define_params(spec);
 }
 
 void NppFilterOp::compute(InputContext& op_input, OutputContext& op_output,
@@ -85,14 +83,11 @@ void NppFilterOp::compute(InputContext& op_input, OutputContext& op_output,
 
   auto& entity = static_cast<nvidia::gxf::Entity&>(maybe_entity.value());
 
-  // get the CUDA stream from the input message
-  gxf_result_t stream_handler_result = cuda_stream_handler_.from_message(context.context(), entity);
-  if (stream_handler_result != GXF_SUCCESS) {
-    throw std::runtime_error("Failed to get the CUDA stream from incoming messages");
-  }
+  // get the operator's internal stream (after synchronizing work on any stream found on input)
+  cudaStream_t cuda_stream = op_input.receive_cuda_stream("input");
 
   // assign the CUDA stream to the NPP stream context
-  npp_stream_ctx_->hStream = cuda_stream_handler_.get_cuda_stream(context.context());
+  npp_stream_ctx_->hStream = cuda_stream;
 
   nvidia::gxf::VideoBufferInfo in_video_buffer_info{};
   void* in_pointer;
@@ -284,12 +279,6 @@ void NppFilterOp::compute(InputContext& op_input, OutputContext& op_output,
   if (status != NPP_SUCCESS) {
     throw std::runtime_error(
         fmt::format("Filter {} failed with error {}", filter_.get(), static_cast<int>(status)));
-  }
-
-  // pass the CUDA stream to the output message
-  stream_handler_result = cuda_stream_handler_.to_message(out_message);
-  if (stream_handler_result != GXF_SUCCESS) {
-    throw std::runtime_error("Failed to add the CUDA stream to the outgoing messages");
   }
 
   // Emit the tensor
