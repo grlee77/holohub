@@ -37,7 +37,6 @@
 #include "holoscan/core/io_spec.hpp"
 #include "holoscan/core/operator_spec.hpp"
 #include "holoscan/core/resources/gxf/allocator.hpp"
-#include "holoscan/core/resources/gxf/cuda_stream_pool.hpp"
 #include "holoscan/utils/cuda_macros.hpp"
 
 namespace holoscan::ops::orsi {
@@ -236,15 +235,11 @@ void FormatConverterOp::compute(InputContext& op_input, OutputContext& op_output
   // Process input message
   auto in_message = op_input.receive<gxf::Entity>("source_video").value();
 
-  // get the CUDA stream from the input message
-  gxf_result_t stream_handler_result =
-      cuda_stream_handler_.from_message(context.context(), in_message);
-  if (stream_handler_result != GXF_SUCCESS) {
-    throw std::runtime_error("Failed to get the CUDA stream from incoming messages");
-  }
+  // get the operator's internal stream and synchonize any streams found on "source_video"
+  auto cuda_stream = op_input.receive_cuda_stream("source_video");
 
   // assign the CUDA stream to the NPP stream context
-  npp_stream_ctx_.hStream = cuda_stream_handler_.get_cuda_stream(context.context());
+  npp_stream_ctx_.hStream = cuda_stream;
 
   nvidia::gxf::Shape out_shape{0, 0, 0};
   void* in_tensor_data = nullptr;
@@ -489,12 +484,6 @@ void FormatConverterOp::compute(InputContext& op_input, OutputContext& op_output
 
   } else {
     throw std::runtime_error("Only support 3 or 4 channel input tensor");
-  }
-
-  // pass the CUDA stream to the output message
-  stream_handler_result = cuda_stream_handler_.to_message(out_message);
-  if (stream_handler_result != GXF_SUCCESS) {
-    throw std::runtime_error("Failed to add the CUDA stream to the outgoing messages");
   }
 
   // Emit the tensor
@@ -953,8 +942,6 @@ void FormatConverterOp::setup(OperatorSpec& spec) {
              std::vector<int>{});
 
   spec.param(allocator_, "allocator", "Allocator", "Output Allocator");
-
-  cuda_stream_handler_.define_params(spec);
 
   // TODO (gbae): spec object holds an information about errors
   // TODO (gbae): incorporate std::expected to not throw exceptions

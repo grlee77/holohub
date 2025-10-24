@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,10 +37,7 @@ class App : public OrsiApp {
     std::shared_ptr<Resource> allocator_resource =
         make_resource<UnboundedAllocator>("unbounded_allocator");
 
-    const std::shared_ptr<CudaStreamPool> cuda_stream_pool =
-        make_resource<CudaStreamPool>("cuda_stream", 0, 0, 0, 1, 5);
-
-    initVideoSource(cuda_stream_pool);
+    initVideoSource();
 
     // -------------------------------------------------------------------------------------
     //

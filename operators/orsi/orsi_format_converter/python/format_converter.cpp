@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,7 +32,6 @@
 #include "holoscan/core/operator.hpp"
 #include "holoscan/core/operator_spec.hpp"
 #include "holoscan/core/resources/gxf/allocator.hpp"
-#include "holoscan/core/resources/gxf/cuda_stream_pool.hpp"
 #include "../format_converter.hpp"
 
 using std::string_literals::operator""s;
@@ -72,7 +71,6 @@ class PyOrsiFormatConverterOp : public orsi::FormatConverterOp {
                           const std::vector<int> out_channel_order = std::vector<int>{},
                           const std::vector<int> src_roi_rect = std::vector<int>{},
                           const std::vector<int> output_img_size = std::vector<int>{},
-                          std::shared_ptr<holoscan::CudaStreamPool> cuda_stream_pool = nullptr,
                           const std::string& name = "format_converter")
       : orsi::FormatConverterOp(ArgList{Arg{"in_tensor_name", in_tensor_name},
                                         Arg{"in_dtype", in_dtype},
@@ -86,7 +84,6 @@ class PyOrsiFormatConverterOp : public orsi::FormatConverterOp {
                                         Arg{"src_roi_rect", src_roi_rect},
                                         Arg{"output_img_size", output_img_size},
                                         Arg{"allocator", allocator}}) {
-    if (cuda_stream_pool) { this->add_arg(Arg{"cuda_stream_pool", cuda_stream_pool}); }
     add_positional_condition_and_resource_args(this, args);
     name_ = name;
     fragment_ = fragment;
@@ -135,7 +132,6 @@ PYBIND11_MODULE(_orsi_format_converter, m) {
                     const std::vector<int>,
                     const std::vector<int>,
                     const std::vector<int>,
-                    std::shared_ptr<holoscan::CudaStreamPool>,
                     const std::string&>(),
            "fragment"_a,
            "allocator"_a,
@@ -152,7 +148,6 @@ PYBIND11_MODULE(_orsi_format_converter, m) {
            "out_channel_order"_a = std::vector<int>{},
            "src_roi_rect"_a = std::vector<int>{},
            "output_img_size"_a = std::vector<int>{},
-           "cuda_stream_pool"_a = py::none(),
            "name"_a = "format_converter"s,
            doc::OrsiFormatConverterOp::doc_OrsiFormatConverterOp_python)
       .def("initialize",

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +25,6 @@
 #include "holoscan/core/io_context.hpp"
 #include "holoscan/core/operator_spec.hpp"
 #include "holoscan/core/resources/gxf/allocator.hpp"
-#include "holoscan/core/resources/gxf/cuda_stream_pool.hpp"
 
 
 #include "opengl_utils.hpp"
@@ -136,7 +135,7 @@ using holoscan::orsi::vis::BufferInfo;
 void OrsiVisualizationOp::setup(OperatorSpec& spec) {
   pimpl_.reset(new holoscan::orsi::OrsiVis);
 
-  spec.param(receivers_, "receivers", "Input Receivers", "List of input receivers.", {});
+  spec.input<std::vector<gxf::Entity>>("receivers", IOSpec::kAnySize);
 
   spec.param(
       window_close_scheduling_term_,
@@ -146,7 +145,6 @@ void OrsiVisualizationOp::setup(OperatorSpec& spec) {
 
   pimpl_->setup(spec);
 
-  cuda_stream_handler_.define_params(spec);
 }
 
 void OrsiVisualizationOp::initialize() {
@@ -250,11 +248,8 @@ void OrsiVisualizationOp::compute(InputContext& op_input, OutputContext& op_outp
     messages.push_back(message);
   }
 
-     // get the CUDA stream from the input message
-  const gxf_result_t result = cuda_stream_handler_.from_messages(context.context(), messages);
-  if (result != GXF_SUCCESS) {
-    throw std::runtime_error("Failed to get the CUDA stream from incoming messages");
-  }
+  // get the operator's internal stream and synchonize any streams found on "receivers"
+  auto cuda_stream = op_input.receive_cuda_stream("receivers");
 
   // cast Condition to BooleanCondition
   auto bool_cond = window_close_scheduling_term_.get();

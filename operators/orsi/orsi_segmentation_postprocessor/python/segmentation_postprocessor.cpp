@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,7 +30,6 @@
 #include "holoscan/core/operator.hpp"
 #include "holoscan/core/operator_spec.hpp"
 #include "holoscan/core/resources/gxf/allocator.hpp"
-#include "holoscan/core/resources/gxf/cuda_stream_pool.hpp"
 
 #include "../segmentation_postprocessor.hpp"
 
@@ -66,7 +65,6 @@ class PyOrsiSegmentationPostprocessorOp : public orsi::SegmentationPostprocessor
       const std::string& data_format = "hwc"s, const std::string& out_tensor_name = ""s,
       const std::vector<int32_t> output_roi_rect = {},
       const std::vector<int32_t> output_img_size = {},
-      std::shared_ptr<holoscan::CudaStreamPool> cuda_stream_pool = nullptr,
       const std::string& name = "segmentation_postprocessor"s)
       : orsi::SegmentationPostprocessorOp(ArgList{Arg{"in_tensor_name", in_tensor_name},
                                                   Arg{"network_output_type", network_output_type},
@@ -75,7 +73,6 @@ class PyOrsiSegmentationPostprocessorOp : public orsi::SegmentationPostprocessor
                                                   Arg{"output_roi_rect", output_roi_rect},
                                                   Arg{"output_img_size", output_img_size},
                                                   Arg{"allocator", allocator}}) {
-    if (cuda_stream_pool) { this->add_arg(Arg{"cuda_stream_pool", cuda_stream_pool}); }
     add_positional_condition_and_resource_args(this, args);
     name_ = name;
     fragment_ = fragment;
@@ -119,7 +116,6 @@ PYBIND11_MODULE(_orsi_segmentation_postprocessor, m) {
                     const std::string&,
                     const std::vector<int32_t>,
                     const std::vector<int32_t>,
-                    std::shared_ptr<holoscan::CudaStreamPool>,
                     const std::string&>(),
            "fragment"_a,
            "allocator"_a,
@@ -129,7 +125,6 @@ PYBIND11_MODULE(_orsi_segmentation_postprocessor, m) {
            "out_tensor_name"_a = ""s,
            "output_roi_rect"_a = std::vector<int32_t>{},
            "output_img_size"_a = std::vector<int32_t>{},
-           "cuda_stream_pool"_a = py::none(),
            "name"_a = "segmentation_postprocessor"s,
            doc::OrsiSegmentationPostprocessorOp::doc_OrsiSegmentationPostprocessorOp_python)
       .def("setup",

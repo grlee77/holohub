@@ -150,14 +150,6 @@ All operators require a shared allocator for memory management:
 allocator = holoscan.resources.UnboundedAllocator(fragment)
 ```
 
-### CUDA Stream Pool
-
-For GPU-accelerated operations:
-
-```python
-cuda_stream_pool = holoscan.resources.CudaStreamPool(fragment)
-```
-
 ## Data Flow
 
 Typical pipeline configuration:

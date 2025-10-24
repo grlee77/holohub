@@ -24,7 +24,6 @@
 #include <npp.h>
 
 #include "holoscan/core/operator.hpp"
-#include "holoscan/utils/cuda_stream_handler.hpp"
 
 #include "segmentation_postprocessor.cuh"
 
@@ -73,7 +72,6 @@ class SegmentationPostprocessorOp : public Operator {
   Parameter<std::vector<int32_t>> output_img_size_;
 
   NppStreamContext npp_stream_ctx_{};
-  CudaStreamHandler cuda_stream_handler_;
 
   nvidia::gxf::Expected<void*> resizeImage(const void* in_tensor_data, const int32_t rows,
                                            const int32_t columns, const int16_t channels,

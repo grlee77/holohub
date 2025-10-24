@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -66,7 +66,7 @@ bool OrsiApp::init(int argc, char** argv) {
   return true;
 }
 
-void OrsiApp::initVideoSource(const  std::shared_ptr<holoscan::CudaStreamPool>& cuda_stream_pool) {
+void OrsiApp::initVideoSource() {
     using namespace holoscan;
 
     const bool use_rdma = from_config("external_source.rdma").as<bool>();
@@ -115,8 +115,7 @@ void OrsiApp::initVideoSource(const  std::shared_ptr<holoscan::CudaStreamPool>& 
           "drop_alpha_channel",
           from_config(yaml_config),
           Arg("allocator") = make_resource<BlockMemoryPool>(
-              "pool", 1, drop_alpha_block_size, drop_alpha_num_blocks),
-          Arg("cuda_stream_pool") = cuda_stream_pool);
+              "pool", 1, drop_alpha_block_size, drop_alpha_num_blocks));
     }
 
     switch (video_source_) {

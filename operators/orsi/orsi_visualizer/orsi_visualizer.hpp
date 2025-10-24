@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +28,6 @@
 #include <vector>
 
 #include "holoscan/core/gxf/gxf_operator.hpp"
-#include "holoscan/utils/cuda_stream_handler.hpp"
 
 #include "vis_intf.hpp"
 
@@ -71,10 +70,7 @@ class OrsiVisualizationOp : public Operator {
   int vp_width_ = 0;
   int vp_height_ = 0;
 
-  Parameter<std::vector<holoscan::IOSpec*>> receivers_;
   Parameter<std::shared_ptr<BooleanCondition>> window_close_scheduling_term_;
-
-  CudaStreamHandler cuda_stream_handler_;
 };
 
 }  // namespace holoscan::ops::orsi

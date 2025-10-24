@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,7 +33,6 @@
 #include "holoscan/core/io_context.hpp"
 #include "holoscan/core/operator_spec.hpp"
 #include "holoscan/core/resources/gxf/allocator.hpp"
-#include "holoscan/core/resources/gxf/cuda_stream_pool.hpp"
 
 
 // TODO: consider to add this as utility macro in Holoscan SDK
@@ -112,8 +111,6 @@ void SegmentationPreprocessorOp::setup(OperatorSpec& spec) {
 
   spec.param(allocator_, "allocator", "Allocator", "Output Allocator");
 
-  cuda_stream_handler_.define_params(spec);
-
   // TODO (gbae): spec object holds an information about errors
   // TODO (gbae): incorporate std::expected to not throw exceptions
 }
@@ -131,12 +128,9 @@ void SegmentationPreprocessorOp::compute(InputContext& op_input, OutputContext& 
   const std::string in_tensor_name = in_tensor_name_.get();
   // Get tensor attached to the message
   auto in_tensor = getTensorByName(in_message, in_tensor_name);
-  // get the CUDA stream from the input message
-  gxf_result_t stream_handler_result =
-      cuda_stream_handler_.from_message(context.context(), in_message);
-  if (stream_handler_result != GXF_SUCCESS) {
-    throw std::runtime_error("Failed to get the CUDA stream from incoming messages");
-  }
+
+  // get the operator's internal stream and synchonize any streams found on "in_tensor"
+  auto cuda_stream = op_input.receive_cuda_stream("in_tensor");
 
   segmentation_preprocessor::Shape shape = {};
   switch (data_format_value_) {
@@ -188,12 +182,6 @@ void SegmentationPreprocessorOp::compute(InputContext& op_input, OutputContext& 
 
   cuda_preprocess(data_format_value_, shape, in_tensor_data, out_tensor_data.value(), means_cuda_,
                   stds_cuda_);
-
-  // pass the CUDA stream to the output message
-  stream_handler_result = cuda_stream_handler_.to_message(out_message);
-  if (stream_handler_result != GXF_SUCCESS) {
-    throw std::runtime_error("Failed to add the CUDA stream to the outgoing messages");
-  }
 
   auto result = gxf::Entity(std::move(out_message.value()));
   op_output.emit(result);

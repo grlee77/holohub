@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,7 +31,6 @@
 #include "holoscan/core/operator.hpp"
 #include "holoscan/core/operator_spec.hpp"
 #include "holoscan/core/resources/gxf/allocator.hpp"
-#include "holoscan/core/resources/gxf/cuda_stream_pool.hpp"
 
 #include "../segmentation_preprocessor.hpp"
 
@@ -67,7 +66,6 @@ class PyOrsiSegmentationPreprocessorOp : public orsi::SegmentationPreprocessorOp
       const std::string& network_output_type = "softmax"s, const std::string& data_format = "hwc"s,
       const std::vector<float> normalize_means = std::vector<float>{},
       const std::vector<float> normalize_stds = std::vector<float>{},
-      std::shared_ptr<holoscan::CudaStreamPool> cuda_stream_pool = nullptr,
       const std::string& name = "segmentation_preprocessor"s)
       : orsi::SegmentationPreprocessorOp(ArgList{Arg{"in_tensor_name", in_tensor_name},
                                                  Arg{"out_tensor_name", out_tensor_name},
@@ -75,7 +73,6 @@ class PyOrsiSegmentationPreprocessorOp : public orsi::SegmentationPreprocessorOp
                                                  Arg{"normalize_means", normalize_means},
                                                  Arg{"normalize_stds", normalize_stds},
                                                  Arg{"allocator", allocator}}) {
-    if (cuda_stream_pool) { this->add_arg(Arg{"cuda_stream_pool", cuda_stream_pool}); }
     add_positional_condition_and_resource_args(this, args);
     name_ = name;
     fragment_ = fragment;
@@ -119,7 +116,6 @@ PYBIND11_MODULE(_orsi_segmentation_preprocessor, m) {
                     const std::string&,
                     const std::vector<float>,
                     const std::vector<float>,
-                    std::shared_ptr<holoscan::CudaStreamPool>,
                     const std::string&>(),
            "fragment"_a,
            "allocator"_a,
@@ -129,7 +125,6 @@ PYBIND11_MODULE(_orsi_segmentation_preprocessor, m) {
            "data_format"_a = "hwc"s,
            "normalize_means"_a = std::vector<float>{},
            "normalize_stds"_a = std::vector<float>{},
-           "cuda_stream_pool"_a = py::none(),
            "name"_a = "segmentation_preprocessor"s,
            doc::OrsiSegmentationPreprocessorOp::doc_OrsiSegmentationPreprocessorOp_python)
       .def("initialize",

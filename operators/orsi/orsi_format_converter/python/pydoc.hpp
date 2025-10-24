@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -64,8 +64,6 @@ src_roi_rec : sequence of int
     Sequence of integers describing region of interest to crop.
 output_img_size : sequence of int
     Sequence of integers describing size of output image after resizing.
-cuda_stream_pool : holoscan.resources.CudaStreamPool, optional
-    CudaStreamPool instance to allocate CUDA streams.
 name : str, optional
     The name of the operator.
 )doc")

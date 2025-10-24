@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,6 @@
 #include <utility>
 
 #include "holoscan/core/operator.hpp"
-#include "holoscan/utils/cuda_stream_handler.hpp"
 #include "segmentation_preprocessor.cuh"
 
 namespace holoscan::ops::orsi {
@@ -61,7 +60,6 @@ class SegmentationPreprocessorOp : public Operator {
   float* means_cuda_ = nullptr;
   float* stds_cuda_ = nullptr;
 
-  CudaStreamHandler cuda_stream_handler_;
 };
 
 }  // namespace holoscan::ops::orsi
